@@ -10,11 +10,13 @@ static int CURRENT_X_POSITION = 0;
 static int CURRENT_Y_POSITION = 0;
 
 static char MOTOR_BYTE = 0x84;
+static int UPPER_STEP = 0;
+static int LOWER_STEP = 0;
 static int STEP_PERIOD = 2;
 
 void motor_loop(void* _args) { // Maybe add step period as an arg
   while (true) {
-    shift_byte(MOTOR_BYTE);
+    shift_byte((1 << (UPPER_STEP + 4)) + (1 << LOWER_STEP));
     vTaskDelay(STEP_PERIOD / portTICK_PERIOD_MS);
   }
 }
@@ -22,6 +24,18 @@ void motor_loop(void* _args) { // Maybe add step period as an arg
 // Kill me later
 int get_motor_byte() {
   return MOTOR_BYTE;
+}
+
+// The delta is a little ugly, but just gives the direction
+void step_motors(motor_set_t ms, int delta) {
+  int step = (delta > 0) ? 1 : (delta < 0) ? -1 : 0; // This is gross
+  if (ms == LOWER_MOTORS) {
+    LOWER_STEP = (LOWER_STEP + step) % 4;
+    LOWER_STEP = (LOWER_STEP < 0) ? 3 : LOWER_STEP;
+  } else {
+    UPPER_STEP = (UPPER_STEP + step) % 4;
+    UPPER_STEP = (UPPER_STEP < 0) ? 3 : UPPER_STEP;
+  }
 }
 
 void setup_motor_driver() {
@@ -49,7 +63,7 @@ void shift_byte(char byte) {
 }
 
 // The delta is a little ugly, but just gives the direction
-void step_motors(motor_set_t ms, int delta) {
+/*void step_motors(motor_set_t ms, int delta) {
   char mask = (ms == LOWER_MOTORS) ? 0x0F : 0xF0;
   char nibble = MOTOR_BYTE & mask;
   if (delta > 0) {
@@ -58,7 +72,7 @@ void step_motors(motor_set_t ms, int delta) {
     nibble = (nibble >> 1 == 0) ? 0x88 : nibble >> 1;
   }
   MOTOR_BYTE = (MOTOR_BYTE & ~mask) | (nibble & mask);
-}
+  }*/
     
 
 void drive_motors(motor_set_t ms, int stp, int per) {
