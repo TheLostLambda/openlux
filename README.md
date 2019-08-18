@@ -9,4 +9,3 @@ An open source, affordable microplate reader for everyone.
 * Export to CSV
 * Add motor subsystem
 * Move to position on web well click
-* Fix setting first bit

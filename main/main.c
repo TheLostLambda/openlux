@@ -42,8 +42,15 @@ void app_main(void) {
   
   // !!! DIRTY CHUNK !!!
   setup_motor_driver();
-  drive_motors(UPPER_MOTORS, -4096, 50);
-  drive_motors(LOWER_MOTORS, 4096, 50);
+  while(true) {
+    vTaskDelay(5000);
+    step_motors(UPPER_MOTORS, 1);
+    vTaskDelay(5000);
+    step_motors(LOWER_MOTORS, -1);
+    char test = 0x01;
+  }   
+  //drive_motors(UPPER_MOTORS, -4096, 50);
+  //drive_motors(LOWER_MOTORS, 4096, 50);
   // !!! DIRTY CHUNK !!!
 }
 
