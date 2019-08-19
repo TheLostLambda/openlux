@@ -4,37 +4,38 @@ static const gpio_num_t DATA = GPIO_NUM_16;
 static const gpio_num_t CLK = GPIO_NUM_17;
 static const gpio_num_t LATCH = GPIO_NUM_18;
 
-static int TARGET_X_POSITION = 0;
-static int TARGET_Y_POSITION = 0;
+static int TARGET_X_POSITION = 500;
+static int TARGET_Y_POSITION = -200;
 static int CURRENT_X_POSITION = 0;
 static int CURRENT_Y_POSITION = 0;
-
-static char MOTOR_BYTE = 0x84;
-static int UPPER_STEP = 0;
-static int LOWER_STEP = 0;
-static int STEP_PERIOD = 2;
+static int X_STEP = 0;
+static int Y_STEP = 0;
+static int STEP_PERIOD = 500;
 
 void motor_loop(void* _args) { // Maybe add step period as an arg
   while (true) {
-    shift_byte((1 << (UPPER_STEP + 4)) + (1 << LOWER_STEP));
+    step_motors(UPPER_MOTORS, TARGET_X_POSITION - CURRENT_X_POSITION);
+    step_motors(LOWER_MOTORS, TARGET_Y_POSITION - CURRENT_Y_POSITION);
+    ESP_LOGI(TAG, "X: %d, Y: %d", CURRENT_X_POSITION, CURRENT_Y_POSITION);
+    shift_byte((1 << (X_STEP + 4)) + (1 << Y_STEP));
     vTaskDelay(STEP_PERIOD / portTICK_PERIOD_MS);
   }
 }
 
-// Kill me later
-int get_motor_byte() {
-  return MOTOR_BYTE;
-}
-
 // The delta is a little ugly, but just gives the direction
 void step_motors(motor_set_t ms, int delta) {
-  int step = (delta > 0) ? 1 : (delta < 0) ? -1 : 0; // This is gross
+  if (delta == 0) { return; }
+  int step = (delta > 0) ? 1 : 3; // Better or worse than below?
+  //int step = (delta > 0) ? 1 : (delta < 0) ? 3 : 0; // This is gross
   if (ms == LOWER_MOTORS) {
-    LOWER_STEP = (LOWER_STEP + step) % 4;
-    LOWER_STEP = (LOWER_STEP < 0) ? 3 : LOWER_STEP;
+    Y_STEP = (Y_STEP + step) % 4;
+    CURRENT_Y_POSITION += (1 + step) % 4 - 1;
   } else {
-    UPPER_STEP = (UPPER_STEP + step) % 4;
-    UPPER_STEP = (UPPER_STEP < 0) ? 3 : UPPER_STEP;
+    // Above or below?
+    //X_STEP = (X_STEP + step) % 4;
+    X_STEP += step;
+    X_STEP %= 4;
+    CURRENT_X_POSITION += (step == 1) ? 1 : -1;
   }
 }
 
